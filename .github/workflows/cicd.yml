@@ -1,11 +1,19 @@
-name: build-and-deploy
+name: build-and-push
 
-# Phase 3 pipeline: on every push to main, build the worker image, push it to
-# GHCR tagged by commit SHA, then roll out the new image to the k3s cluster.
+# Phase 3 pipeline (pull-based GitOps):
+# On push to main, build the worker image and push it to GHCR tagged by commit SHA,
+# then write that tag into k8s/kustomization.yaml and commit it back. Argo CD (running
+# IN the cluster) watches the repo and reconciles the Deployment to the new tag.
+# There is no deploy step here — the cluster pulls. Nothing reaches into the LAN.
 on:
   push:
     branches: [main]
-  workflow_dispatch: {}   # lets you re-run the pipeline by hand from the Actions tab
+    # Skip rebuilds for changes that don't affect the image: the manifests Argo
+    # watches, and docs. This also means the commit-back below never rebuilds.
+    paths-ignore:
+      - 'k8s/**'
+      - '**.md'
+  workflow_dispatch: {}
 
 env:
   IMAGE: ghcr.io/leadbraw/sensormon-worker
@@ -14,8 +22,8 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      packages: write       # required to push to GHCR with GITHUB_TOKEN
+      contents: write       # to commit the new image tag back to the repo
+      packages: write       # to push the image to GHCR with GITHUB_TOKEN
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,8 +35,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Derive tags/labels: an immutable sha-<short> tag for every commit, plus
-      # :latest on the default branch for convenience.
       - name: Compute image tags
         id: meta
         uses: docker/metadata-action@v5
@@ -52,17 +58,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    needs: build-and-push
-    # Runs on the self-hosted runner installed on the k3s server, which already
-    # has cluster access — so no kubeconfig secret is needed in GitHub.
-    runs-on: [self-hosted, linux]
-    steps:
-      - name: Roll out the new image
+      # GitOps write-back: point the desired image tag in git at the image we just
+      # pushed. Argo CD reconciles the cluster to match. Pushes made with GITHUB_TOKEN
+      # do NOT trigger another workflow run (GitHub's recursion guard), and the
+      # paths-ignore above covers k8s/** too — so this never loops.
+      - name: Update image tag in kustomization and commit back
         run: |
           set -euo pipefail
-          # metadata-action's type=sha emits the tag "sha-<7-char-short>".
           TAG="sha-$(echo "${GITHUB_SHA}" | cut -c1-7)"
-          echo "Deploying ${IMAGE}:${TAG}"
-          kubectl -n sensormon set image deployment/worker "worker=${IMAGE}:${TAG}"
-          kubectl -n sensormon rollout status deployment/worker --timeout=120s
+          echo "Setting k8s/kustomization.yaml image tag to ${TAG}"
+          yq -i ".images[0].newTag = \"${TAG}\"" k8s/kustomization.yaml
+          if git diff --quiet -- k8s/kustomization.yaml; then
+            echo "Image tag already up to date; nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: deploy ${IMAGE}:${TAG}"
+          git push

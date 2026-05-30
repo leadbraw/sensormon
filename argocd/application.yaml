@@ -1,0 +1,31 @@
+# Declarative Argo CD Application — the GitOps "seed". Apply this once on the cluster
+# (`kubectl apply -f argocd/application.yaml`) after installing Argo CD. From then on,
+# Argo CD watches this repo's k8s/ path and keeps the cluster reconciled to git.
+#
+# The repo is public, so Argo CD needs no git credentials to read it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sensormon
+  namespace: argocd            # Argo CD's own namespace, where it watches Applications
+  # Finalizer so that deleting this Application also prunes the resources it manages.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/leadbraw/sensormon
+    targetRevision: main
+    path: k8s                  # Argo renders k8s/kustomization.yaml from here
+  destination:
+    server: https://kubernetes.default.svc   # the cluster Argo CD runs in
+    namespace: sensormon
+  syncPolicy:
+    automated:
+      prune: true              # remove resources deleted from git
+      selfHeal: true           # revert manual drift back to git's state
+    syncOptions:
+      - CreateNamespace=true    # create the sensormon namespace if absent
+      # Server-side apply avoids "last-applied-configuration too large" issues and
+      # plays nicer when adopting resources that already exist from Phase 2.
+      - ServerSideApply=true
