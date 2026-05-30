@@ -39,3 +39,5 @@ desktop.ini
 appsettings.*.Local.json
 *.env
 .env
+
+CLAUDE.md
