@@ -4,14 +4,12 @@
 # sha-<short> on every push, and Argo CD syncs the change.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
   - 00-namespace.yaml
   - 10-config.yaml
   - 20-postgres.yaml
   - 30-worker.yaml
   - 40-cleanup-cronjob.yaml
-
 images:
   - name: ghcr.io/leadbraw/sensormon-worker
-    newTag: latest   # CI (.github/workflows/cicd.yml) overwrites this with sha-<short>
+    newTag: sha-396ec12 # CI (.github/workflows/cicd.yml) overwrites this with sha-<short>
