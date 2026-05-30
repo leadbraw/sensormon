@@ -1,0 +1,34 @@
+# Local dev: spin up Postgres + the worker together before you ever touch k3s.
+# Build order in your week: get THIS working first (step 2-3), then move to k8s.
+#
+#   docker compose up --build
+#
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: sensormon
+      POSTGRES_USER: sensormon
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"          # exposed so you can poke it with psql / a GUI
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      # Double underscore = nested config key. Overrides appsettings.json.
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=sensormon;Username=sensormon;Password=devpassword"
+      # Point this at your Windows desktop's LHM endpoint (reserved IP).
+      Sensor__Endpoint: "http://192.168.4.54:8085/data.json"
+      Sensor__PollSeconds: "5"
+      # Store wall-clock time in Pacific (DST-aware) instead of the container's UTC default.
+      TZ: "America/Los_Angeles"
+
+volumes:
+  pgdata:

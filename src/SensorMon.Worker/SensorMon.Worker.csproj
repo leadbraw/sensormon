@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SensorMon.Worker</RootNamespace>
+    <!-- Lets EF Core tooling (dotnet ef) find the DbContext at design time -->
+    <UserSecretsId>sensormon-worker</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Generic Host: Host.CreateApplicationBuilder, BackgroundService, IHostedService.
+         The Worker SDK generates the global usings for these but does NOT reference the
+         assembly itself — this package supplies it. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <!-- IHttpClientFactory + AddHttpClient("lhm"). -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+
+    <!-- EF Core + Postgres provider. Keep versions on the 10.x line to match the runtime. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <!-- Design-time package: enables `dotnet ef migrations` etc. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

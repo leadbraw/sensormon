@@ -1,0 +1,9 @@
+# Match at ANY depth — plain "bin/"/"obj/" only match the context root, which
+# would let the host's src/SensorMon.Worker/obj leak in and break --no-restore.
+**/bin/
+**/obj/
+.git/
+.github/
+k8s/
+*.md
+docker-compose.yml

@@ -1,0 +1,68 @@
+name: build-and-deploy
+
+# Phase 3 pipeline: on every push to main, build the worker image, push it to
+# GHCR tagged by commit SHA, then roll out the new image to the k3s cluster.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}   # lets you re-run the pipeline by hand from the Actions tab
+
+env:
+  IMAGE: ghcr.io/leadbraw/sensormon-worker
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write       # required to push to GHCR with GITHUB_TOKEN
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Derive tags/labels: an immutable sha-<short> tag for every commit, plus
+      # :latest on the default branch for convenience.
+      - name: Compute image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    # Runs on the self-hosted runner installed on the k3s server, which already
+    # has cluster access — so no kubeconfig secret is needed in GitHub.
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Roll out the new image
+        run: |
+          set -euo pipefail
+          # metadata-action's type=sha emits the tag "sha-<7-char-short>".
+          TAG="sha-$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          echo "Deploying ${IMAGE}:${TAG}"
+          kubectl -n sensormon set image deployment/worker "worker=${IMAGE}:${TAG}"
+          kubectl -n sensormon rollout status deployment/worker --timeout=120s

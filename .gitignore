@@ -1,0 +1,41 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coverlet.json
+coverage/
+
+# IDE / editor cruft
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Rider
+*.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local secrets / env overrides (never commit real creds)
+appsettings.*.Local.json
+*.env
+.env
