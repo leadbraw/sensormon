@@ -1,16 +1,12 @@
-# k8s CronJob: runs nightly, deletes readings older than 3 days.
-# This is a SEPARATE deployable from the worker — good separation of concerns,
-# and it gives you a second thing in your CI pipeline + a CronJob talking point.
-#
-# It just runs psql against the in-cluster Postgres. No custom image needed.
+# cronjob to delete readings older than 3 days. runs nightly. just runs psql.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: cleanup-old-readings
   namespace: sensormon
 spec:
-  schedule: "0 4 * * *"          # 04:00 every day (cron syntax)
-  concurrencyPolicy: Forbid       # don't start a new run if one is still going
+  schedule: "0 4 * * *"          # 0400 daily
+  concurrencyPolicy: Forbid       # one at a time, please!
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -20,13 +16,11 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: cleanup
-              image: postgres:17    # reuse the postgres image just for the psql client
+              image: postgres:17    # same image
               envFrom:
                 - secretRef:
                     name: sensormon-secret
               env:
-                # Match the worker's zone so LOCALTIMESTAMP (used in the DELETE
-                # below) lines up with the local-time values we store.
                 - name: TZ
                   value: "America/Los_Angeles"
               command:

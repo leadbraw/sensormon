@@ -15,17 +15,10 @@ spec:
       labels:
         app: worker
     spec:
-      # The GHCR package is private, so the kubelet needs credentials to pull it.
-      # This references a docker-registry secret created out-of-band (NOT committed
-      # here — it holds a GHCR token). Create it on the cluster with:
-      #   kubectl create secret docker-registry ghcr-pull-secret \
-      #     --namespace sensormon --docker-server=ghcr.io \
-      #     --docker-username=leadbraw --docker-password=<read:packages token>
       imagePullSecrets:
-        - name: ghcr-pull-secret
+        - name: ghcr-pull-secret # created on cluster
       containers:
         - name: worker
-          # CI replaces this tag via `kubectl set image`. ghcr.io/<you>/sensormon-worker
           image: ghcr.io/leadbraw/sensormon-worker:latest
           envFrom:
             - configMapRef:
@@ -38,6 +31,4 @@ spec:
               memory: "64Mi"
             limits:
               memory: "256Mi"
-      # No liveness probe with an HTTP check here because it's a Worker (no web
-      # server). If you wanted one, you'd add a tiny health endpoint or a file
-      # heartbeat. Be ready to explain WHY a worker doesn't need an HTTP probe.
+# no probes since the worker will just crashloop and also doesnt do any processing or sending or handling of network requests

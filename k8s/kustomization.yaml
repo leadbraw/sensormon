@@ -1,7 +1,3 @@
-# Kustomize entrypoint for the sensormon app. Argo CD renders this (path: k8s) and
-# reconciles the cluster to match. The `images` block is the single source of truth
-# for which image tag is deployed — CI rewrites `newTag` to the freshly built
-# sha-<short> on every push, and Argo CD syncs the change.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -12,4 +8,4 @@ resources:
   - 40-cleanup-cronjob.yaml
 images:
   - name: ghcr.io/leadbraw/sensormon-worker
-    newTag: sha-396ec12 # CI (.github/workflows/cicd.yml) overwrites this with sha-<short>
+    newTag: sha-396ec12 # Written by Github Actions worker

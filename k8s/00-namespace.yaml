@@ -1,5 +1,3 @@
-# A namespace keeps your learning project's resources tidy and separate.
-# Apply this first:  kubectl apply -f 00-namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
