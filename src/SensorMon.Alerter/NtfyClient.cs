@@ -36,7 +36,8 @@ public sealed class NtfyClient
             Content = new StringContent(body),
         };
         // ntfy reads these headers to set the notification's title, urgency, and icons.
-        req.Headers.TryAddWithoutValidation("Title", $"\U0001F525 High temp: {alert.Component}");
+        // headers must be ascii, ntfy will autofill emojis for the warning & fire tags
+        req.Headers.TryAddWithoutValidation("Title", $"High temp: {alert.Component}");
         req.Headers.TryAddWithoutValidation("Priority", "high");
         req.Headers.TryAddWithoutValidation("Tags", "warning,fire");
 
