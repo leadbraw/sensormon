@@ -1,8 +1,10 @@
-# Local dev: spin up Postgres + the worker together before you ever touch k3s.
-# Build order in your week: get THIS working first (step 2-3), then move to k8s.
+# Local dev: spin up Postgres + Valkey + the worker + the alerter together before you
+# ever touch k3s. Build order in your week: get THIS working first, then move to k8s.
 #
 #   docker compose up --build
 #
+# To force alerts for testing, drop Sensor__HighTempThreshold to something your rig
+# always exceeds (e.g. 30) and watch the alerter POST to ntfy / your phone buzz.
 services:
   postgres:
     image: postgres:17
@@ -15,20 +17,51 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  valkey:
+    image: valkey/valkey:8
+    # Enable AOF so the alert stream + pending list survive a restart (mirrors k8s).
+    command: ["valkey-server", "--appendonly", "yes", "--dir", "/data"]
+    ports:
+      - "6379:6379"          # exposed so you can inspect with redis-cli / valkey-cli
+    volumes:
+      - valkeydata:/data
+
   worker:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PROJECT: SensorMon.Worker
     depends_on:
       - postgres
+      - valkey
     environment:
       # Double underscore = nested config key. Overrides appsettings.json.
       ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=sensormon;Username=sensormon;Password=devpassword"
       # Point this at your Windows desktop's LHM endpoint (reserved IP).
       Sensor__Endpoint: "http://192.168.4.54:8085/data.json"
       Sensor__PollSeconds: "5"
+      Sensor__HighTempThreshold: "85.0"
+      Valkey__Connection: "valkey:6379"
       # Store wall-clock time in Pacific (DST-aware) instead of the container's UTC default.
+      TZ: "America/Los_Angeles"
+
+  alerter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT: SensorMon.Alerter
+    depends_on:
+      - valkey
+    environment:
+      Valkey__Connection: "valkey:6379"
+      Ntfy__BaseUrl: "https://ntfy.sh"
+      # Put your own (hard-to-guess) ntfy topic here to test on your phone.
+      Ntfy__Topic: "sensormon12"
+      Alert__CooldownSeconds: "300"
       TZ: "America/Los_Angeles"
 
 volumes:
   pgdata:
+  valkeydata:

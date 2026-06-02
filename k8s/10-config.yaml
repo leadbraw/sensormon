@@ -15,6 +15,10 @@ data:
   Sensor__Endpoint: "http://192.168.4.54:8085/data.json" # LHWM's endpoint on my desktop
   Sensor__PollSeconds: "5"
   Sensor__HighTempThreshold: "85.0"
+  # Broker + alerting (shared by worker and alerter; both envFrom this ConfigMap).
+  Valkey__Connection: "valkey:6379"
+  Ntfy__BaseUrl: "https://ntfy.sh"
+  Alert__CooldownSeconds: "300"   # per-sensor debounce/idempotency window (5 min)
   TZ: "America/Los_Angeles"
 ---
 apiVersion: v1
@@ -30,3 +34,6 @@ stringData:
   POSTGRES_DB: "sensormon"
   POSTGRES_USER: "sensormon"
   POSTGRES_PASSWORD: "changeme-in-real-life"
+  # ntfy topic is semi-secret: anyone who knows it can read your alerts, so it lives
+  # in the Secret, not the ConfigMap. Set this to your own hard-to-guess topic.
+  Ntfy__Topic: "sensormon12"

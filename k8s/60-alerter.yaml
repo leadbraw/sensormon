@@ -1,0 +1,38 @@
+# The alerter Deployment: subscribes to the Valkey alert stream via a consumer group
+# and pushes notifications to ntfy. Pulls its image from GHCR (set by CI) and its config
+# from the same ConfigMap + Secret the worker uses.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alerter
+  namespace: sensormon
+spec:
+  # One replica is plenty. The consumer group means we COULD scale to N and each replica
+  # would get a disjoint share of the stream — but a homelab notifier doesn't need it.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alerter
+  template:
+    metadata:
+      labels:
+        app: alerter
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret # created on cluster
+      containers:
+        - name: alerter
+          image: ghcr.io/leadbraw/sensormon-alerter:latest
+          envFrom:
+            - configMapRef:
+                name: sensormon-config
+            - secretRef:
+                name: sensormon-secret
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "32Mi"
+            limits:
+              memory: "128Mi"
+# No probes: like the worker, the alerter does no inbound network work. If it can't
+# reach Valkey it logs and retries rather than crashing; a bad image just crashloops.

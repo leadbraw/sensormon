@@ -3,9 +3,13 @@ kind: Kustomization
 resources:
   - 00-namespace.yaml
   - 10-config.yaml
+  - 15-valkey.yaml
   - 20-postgres.yaml
   - 30-worker.yaml
   - 40-cleanup-cronjob.yaml
+  - 60-alerter.yaml
 images:
   - name: ghcr.io/leadbraw/sensormon-worker
-    newTag: sha-396ec12 # Written by Github Actions worker
+    newTag: sha-396ec12 # Written by Github Actions (build job)
+  - name: ghcr.io/leadbraw/sensormon-alerter
+    newTag: sha-396ec12 # Written by Github Actions (build job)
