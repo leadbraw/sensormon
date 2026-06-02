@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/SensorMon.Alerter/SensorMon.Alerter.csproj" />
     <Project Path="src/SensorMon.Contracts/SensorMon.Contracts.csproj" />
     <Project Path="src/SensorMon.Worker/SensorMon.Worker.csproj" />
   </Folder>

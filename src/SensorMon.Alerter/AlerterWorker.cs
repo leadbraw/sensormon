@@ -90,7 +90,7 @@ public sealed class AlerterWorker : BackgroundService
     private async Task HandleEntryAsync(IDatabase db, StreamEntry entry, CancellationToken ct)
     {
         var json = entry[AlertStream.PayloadField];
-        Alert? alert = json.IsNullOrEmpty ? null : JsonSerializer.Deserialize<Alert>(json!);
+        Alert? alert = json.IsNullOrEmpty ? null : JsonSerializer.Deserialize<Alert>((string)json!);
 
         if (alert is null)
         {
