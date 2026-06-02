@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SensorMon.Worker;
+using StackExchange.Redis;
 
 // Host.CreateApplicationBuilder gives you config, logging, and DI with no web server.
 // This is the Worker Service template's entry point — minimal by design.
@@ -18,6 +19,19 @@ builder.Services.AddHttpClient("lhm");
 //   ConnectionStrings__Postgres
 builder.Services.AddDbContext<SensorDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+
+// Valkey connection (shared singleton multiplexer — the recommended lifetime).
+// AbortOnConnectFail = false so a momentarily-unavailable Valkey doesn't crash
+// startup; the multiplexer connects lazily and reconnects on its own. The connection
+// string comes from Valkey:Connection (env Valkey__Connection in k8s), e.g. "valkey:6379".
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+{
+    var config = ConfigurationOptions.Parse(
+        builder.Configuration.GetValue("Valkey:Connection", "localhost:6379")!);
+    config.AbortOnConnectFail = false;
+    return ConnectionMultiplexer.Connect(config);
+});
+builder.Services.AddSingleton<IAlertPublisher, RedisAlertPublisher>();
 
 // Register the background worker.
 builder.Services.AddHostedService<PollingWorker>();

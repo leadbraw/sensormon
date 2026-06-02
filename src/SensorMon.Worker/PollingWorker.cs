@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using SensorMon.Contracts;
 
 namespace SensorMon.Worker;
 
@@ -12,17 +13,20 @@ public sealed class PollingWorker : BackgroundService
     private readonly ILogger<PollingWorker> _log;
     private readonly IHttpClientFactory _httpFactory;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IAlertPublisher _publisher;
     private readonly SensorOptions _opts;
 
     public PollingWorker(
         ILogger<PollingWorker> log,
         IHttpClientFactory httpFactory,
         IServiceScopeFactory scopeFactory,
+        IAlertPublisher publisher,
         IOptions<SensorOptions> opts)
     {
         _log = log;
         _httpFactory = httpFactory;
         _scopeFactory = scopeFactory;
+        _publisher = publisher;
         _opts = opts.Value;
     }
 
@@ -88,17 +92,36 @@ public sealed class PollingWorker : BackgroundService
 
         _log.LogInformation("Stored {Count} readings at {Time}", readings.Count, now);
 
-        // --- OPTIONAL event-driven hook -------------------------------------
-        // When you add the alerting piece, this is where you'd check the
-        // threshold and publish an event to Redis/NATS:
+        // --- event-driven alert hook ----------------------------------------
+        // Publish a HighTempAlert for each breaching temperature reading. This runs
+        // AFTER SaveChanges, on purpose: the publish is OUTSIDE the DB transaction
+        // (the dual-write is decoupled). Delivery is at-least-once, so the consumer
+        // (Alerter) is responsible for debounce + idempotency.
         //
-        //   var hot = readings.Where(r =>
-        //       r.SensorType == "Temperature" && r.Value >= _opts.HighTempThreshold);
-        //   foreach (var r in hot)
-        //       await _publisher.PublishHighTempAsync(r, ct);
-        //
-        // Keep the publish OUT of the same DB transaction; the consumer should
-        // be idempotent because delivery is at-least-once.
+        // We don't debounce here — the worker stays dumb and publishes every breach;
+        // the Alerter's per-sensor cooldown collapses repeats AND redeliveries into
+        // one notification. Each publish is isolated so a Valkey hiccup can't crash
+        // the poll loop (same resilience contract as the rest of this service).
+        foreach (var r in readings)
+        {
+            if (r.SensorType != "Temperature" || r.Value < _opts.HighTempThreshold)
+                continue;
+
+            try
+            {
+                var alert = new Alert(
+                    r.Component, r.SensorName, r.SensorType,
+                    r.Value, r.Unit, _opts.HighTempThreshold, r.Timestamp);
+                await _publisher.PublishAsync(alert, ct);
+                _log.LogInformation(
+                    "Published high-temp alert: {Sensor} = {Value}{Unit} (>= {Threshold})",
+                    r.SensorName, r.Value, r.Unit, _opts.HighTempThreshold);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Failed to publish alert for {Sensor}", r.SensorName);
+            }
+        }
         // --------------------------------------------------------------------
     }
 }

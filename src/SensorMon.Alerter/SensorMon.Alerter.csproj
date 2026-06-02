@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SensorMon.Alerter</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Generic Host: BackgroundService, Host.CreateApplicationBuilder. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <!-- IHttpClientFactory for the ntfy POST. -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <!-- Valkey/Redis client: consumer-group reads (XREADGROUP) + the SET NX EX cooldown. -->
+    <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Shared message contract (Alert DTO + stream names). -->
+    <ProjectReference Include="..\SensorMon.Contracts\SensorMon.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
