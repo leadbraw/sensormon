@@ -14,7 +14,7 @@ metadata:
 data:
   Sensor__Endpoint: "http://192.168.4.54:8085/data.json" # LHWM's endpoint on my desktop
   Sensor__PollSeconds: "5"
-  Sensor__HighTempThreshold: "30.0"
+  Sensor__HighTempThreshold: "85.0"
   # Broker + alerting (shared by worker and alerter; both envFrom this ConfigMap).
   Valkey__Connection: "valkey:6379"
   Ntfy__BaseUrl: "https://ntfy.sh"
