@@ -10,6 +10,6 @@ resources:
   - 60-alerter.yaml
 images:
   - name: ghcr.io/leadbraw/sensormon-worker
-    newTag: sha-8474567 # Written by Github Actions (build job)
+    newTag: sha-132eaaf # Written by Github Actions (build job)
   - name: ghcr.io/leadbraw/sensormon-alerter
-    newTag: sha-8474567 # Written by Github Actions (build job)
+    newTag: sha-132eaaf # Written by Github Actions (build job)
