@@ -1,11 +1,7 @@
-# Valkey (the BSD-licensed Redis fork) — the message broker for high-temp alerts.
-# Three objects, same shape as Postgres:
+# Just like our Postgres config:
 #   - PVC: durable storage so the alert stream + pending list survive a pod restart
 #   - Deployment: runs valkey-server with AOF persistence enabled
 #   - Service: stable in-cluster DNS name ("valkey") for producer + consumer
-#
-# We use Streams (not Pub/Sub): a consumer group gives at-least-once delivery, so an
-# Alerter that's down during a deploy doesn't lose alerts — they wait in the stream.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -18,7 +14,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  # k3s default "local-path" StorageClass — omit storageClassName to use it.
 ---
 apiVersion: apps/v1
 kind: Deployment

@@ -2,9 +2,6 @@
 #   - PVC: durable storage so data survives pod restarts
 #   - Deployment: runs the postgres container, mounts the PVC
 #   - Service: stable in-cluster DNS name ("postgres") for the worker to connect to
-#
-# For LEARNING this is fine. In production you'd use a StatefulSet (or a managed
-# DB / an operator like CloudNativePG). Mentioning that nuance scores points.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
