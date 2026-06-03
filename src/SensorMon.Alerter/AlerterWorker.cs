@@ -16,9 +16,8 @@ public sealed class AlerterWorker : BackgroundService
     private readonly NtfyClient _ntfy;
     private readonly AlerterOptions _opts;
 
-    // Identifies this consumer within the group. Using the pod/host name means that if
-    // we ever scale to >1 replica each gets its own share of the stream automatically.
-    private readonly string _consumerName = Environment.MachineName;
+    // must stay the same!
+    private readonly string _consumerName;
 
     // How often to poll when the stream is idle. StackExchange.Redis doesn't expose
     // XREADGROUP's BLOCK option, so we poll; at a handful of sensors this is negligible.
@@ -34,6 +33,7 @@ public sealed class AlerterWorker : BackgroundService
         _mux = mux;
         _ntfy = ntfy;
         _opts = opts.Value;
+        _consumerName = _opts.ConsumerName;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

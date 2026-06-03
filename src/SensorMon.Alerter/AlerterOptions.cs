@@ -12,4 +12,7 @@ public sealed class AlerterOptions
 
     // 5 min (per sensor)
     public int CooldownSeconds { get; set; } = 300;
+
+    // fixed name so new pods can read the PEL of old ones (e.g. on crash/restart)
+    public string ConsumerName { get; set; } = "alerter-0";
 }

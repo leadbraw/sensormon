@@ -14,6 +14,7 @@ builder.Services.Configure<AlerterOptions>(o =>
     o.NtfyBaseUrl = builder.Configuration.GetValue("Ntfy:BaseUrl", "https://ntfy.sh")!;
     o.NtfyTopic = builder.Configuration.GetValue("Ntfy:Topic", "")!;
     o.CooldownSeconds = builder.Configuration.GetValue("Alert:CooldownSeconds", 300);
+    o.ConsumerName = builder.Configuration.GetValue("Alerter:ConsumerName", "alerter-0")!;
 });
 
 // HttpClient for the ntfy POST.
