@@ -15,6 +15,13 @@ The core of the project is two .NET 10 BackgroundServices running in [k3s](https
 
 In addition, on commit push, a github workflow builds a new image, pushes it to GHCR and updates the proper image tag in kustomization.yaml. [Argo CD](https://argoproj.github.io/cd/) then reads/fetches the new image & reconciles the cluster to match.
 
+---
+
+<p align="center">
+    <img src="./assets/alert-example.jpeg" style="width: 50%">
+</p>
+An example notification on my phone. The threshold temperature was set to 30° C for testing purposes.
+
 ## TODO
 - Add test stage to ci/cd pipeline
 - General cleanup
