@@ -30,7 +30,3 @@ In addition, on pushing to main, a github workflow builds a new image, pushes it
 <p align="center">
     A partial screenshot of the deployment, as seen in Argo CD.
 </p>
-
-## TODO
-- Add test stage to ci/cd pipeline
-- General cleanup
