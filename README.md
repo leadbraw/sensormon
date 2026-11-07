@@ -15,6 +15,8 @@ The core of the project is two .NET 10 BackgroundServices running in [k3s](https
 
 In addition, on pushing to main, a github workflow builds a new image, pushes it to GHCR and updates the proper image tag in kustomization.yaml. [Argo CD](https://argoproj.github.io/cd/) detects the updated manifest in git and reconciles the cluster to match, causing k3s to pull the new image.
 
+This was an exercise in learning C#, kubernetes, & ci/cd
+
 ---
 
 <p align="center">
